@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🚀 Multi-Tool Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #1e1e2f, #2e2e4d);
+      color: #f1f1f1;
+      transition: background 0.5s ease, color 0.5s ease;
+      padding-top: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    body.light-mode {
+      background: linear-gradient(135deg, #ffffff, #e2e2e2);
+      color: #333;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 100vw;
+      background-image: url('./static/sentiment.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      filter: blur(10px) brightness(0.6);
+      opacity: 0.7;
+      z-index: -1;
+      transition: filter 0.5s ease, opacity 0.5s ease;
+    }
+
+    body.light-mode::before {
+      filter: blur(10px) brightness(1.1);
+      opacity: 0.5;
+    }
+
+    .navbar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 999;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #ffd000;
+    }
+
+    .nav-links a {
+      margin-left: 20px;
+      text-decoration: none;
+      color: #f1f1f1;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .nav-links a:hover {
+      color: #00e0ff;
+    }
+
+    body.light-mode .navbar {
+      background: rgba(255, 255, 255, 0.7);
+      border-bottom: 1px solid #ccc;
+    }
+
+    body.light-mode .nav-title {
+      color: #333;
+    }
+
+    body.light-mode .nav-links a {
+      color: #333;
+    }
+
+    .container {
+      backdrop-filter: blur(20px);
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 24px;
+      padding: 32px;
+      width: 90%;
+      max-width: 550px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+      animation: fadeIn 0.6s ease;
+      margin-top: 50px;
+      display: none;
+    }
+
+    .container.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 28px;
+      color: #ffd000;
+    }
+
+    textarea {
+      width: 100%;
+      height: 130px;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: none;
+      margin-bottom: 20px;
+      resize: none;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: inherit;
+    }
+
+    textarea:focus {
+      outline: none;
+      border: 2px solid #00e0ff;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: all 0.3s ease;
+    }
+
+    #analyzeBtn {
+      background-color: #ffd000;
+      color: #000;
+      font-weight: bold;
+    }
+
+    #analyzeBtn:hover {
+      background-color: #ffb000;
+      transform: scale(1.03);
+    }
+
+    #clearBtn {
+      background-color: transparent;
+      border: 1px solid #aaa;
+      color: inherit;
+    }
+
+    #clearBtn:hover {
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    #toggleMode {
+      background-color: #444;
+      color: #fff;
+    }
+
+    #toggleMode:hover {
+      background-color: #222;
+    }
+
+    #result {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid #888;
+      transition: all 0.3s ease;
+    }
+
+    .positive {
+      color: #4caf50;
+    }
+
+    .negative {
+      color: #f44336;
+    }
+
+    .neutral {
+      color: #9e9e9e;
+    }
+
+    #loading {
+      text-align: center;
+      margin-top: 10px;
+      display: none;
+      font-style: italic;
+      color: #00e0ff;
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(10, 35px);
+      grid-template-rows: repeat(10, 35px);
+      gap: 4px;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    #grid div {
+      width: 35px;
+      height: 35px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background-color: rgba(255, 255, 255, 0.05);
+      transition: 0.2s ease;
+      border-radius: 4px;
+    }
+
+    #grid div:hover {
+      cursor: pointer;
+      transform: scale(1.05);
+      box-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
+    }
+
+    .pathfinding-buttons {
+      display: flex;
+      justify-content: space-evenly;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .pathfinding-buttons button {
+      background: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s ease;
+      color: #333;
+    }
+
+    .pathfinding-buttons button:hover {
+      background: #f0f0f0;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+      textarea {
+        height: 100px;
+      }
+    }
+  </style>
+</head>
+<body class="dark-mode">
+
+  <nav class="navbar">
+    <div class="nav-title">🚀 Multi-Tool Dashboard</div>
+    <div class="nav-links">
+      <a id="nav-sentiment">💬 Sentiment</a>
+      <a id="nav-pathfinding">🧭 A*</a>
+      <a id="nav-tictactoe">❌⭕ Tic Tac Toe</a>
+    </div>
+  </nav>
+
+  <div class="container" id="sentiment">
+    <h1>💬 Sentiment Analysis Tool</h1>
+    <textarea id="userInput" placeholder="Type your thoughts..."></textarea>
+    <button id="analyzeBtn" onclick="analyzeSentiment()">🔍 Analyze</button>
+    <button id="clearBtn" onclick="clearAll()">🧹 Clear</button>
+    <button id="toggleMode" onclick="toggleMode()">🌓 Toggle Dark/Light</button>
+
+    <div id="loading">⏳ Analyzing sentiment...</div>
+    <div id="result"></div>
+  </div>
+
+  <div class="container" id="pathfinding">
+    <h1>🧭 A* Pathfinding Visualizer</h1>
+    <div id="grid"></div>
+
+    <div class="pathfinding-buttons">
+      <button onclick="setMode('start')">Start</button>
+      <button onclick="setMode('end')">End</button>
+      <button onclick="setMode('obstacle')">Obstacle</button>
+      <button onclick="clearGrid()">Clear</button>
+      <button onclick="findPath()">🚀 Find Path</button>
+    </div>
+  </div>
+
+  <div class="container" id="tictactoe">
+    <h1>❌⭕ Tic Tac Toe</h1>
+    <div id="tic-tac-toe-board" style="display: grid; grid-template-columns: repeat(3, 100px); grid-gap: 10px; justify-content: center; margin-top: 20px;">
+      <button class="ttt-cell" data-cell-index="0" style="width: 100px; height: 100px; font-size: 48px; cursor: pointer;"></button>
+      <button class="ttt-cell" data-cell-index="1" style="width: 100px; height: 100px; font-size: 48px; cursor: pointer;"></button>
+      <button class="ttt-cell" data-cell-index="2" style="width: 100px; height: 100px; font-size: 48px; cursor: pointer;"></button>
+      <button class="ttt-cell" data-cell-index="3" style="width: 100px; height: 100px; font-size: 48px; cursor: pointer;"></button>
+      <button class="ttt-cell" data-cell-index="4" style="width: 100px; height: 100px; font-size: 48px; cursor: pointer;"></button>
+      <button class="ttt-cell" data-cell-index="5" style="width: 100px; height: 100px; font-size: 48px; cursor: pointer;"></button>
+      <button class="ttt-cell" data-cell-index="6" style="width: 100px; height: 100px; font-size: 48px; cursor: pointer;"></button>
+      <button class="ttt-cell" data-cell-index="7" style="width: 100px; height: 100px; font-size: 48px; cursor: pointer;"></button>
+      <button class="ttt-cell" data-cell-index="8" style="width: 100px; height: 100px; font-size: 48px; cursor: pointer;"></button>
+    </div>
+    <div style="text-align: center; margin-top: 20px;">
+      <button id="ttt-reset" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Reset Game</button>
+    </div>
+    <div id="ttt-status" style="text-align: center; margin-top: 15px; font-size: 18px; color: #ffd000;"></div>
+  </div>
+
+  <script>
+    // Navbar click handlers to toggle tool visibility
+    const sentimentContainer = document.getElementById('sentiment');
+    const pathfindingContainer = document.getElementById('pathfinding');
+    const tictactoeContainer = document.getElementById('tictactoe');
+    const navSentiment = document.getElementById('nav-sentiment');
+    const navPathfinding = document.getElementById('nav-pathfinding');
+    const navTicTacToe = document.getElementById('nav-tictactoe');
+
+    function hideAll() {
+      sentimentContainer.classList.remove('active');
+      pathfindingContainer.classList.remove('active');
+      tictactoeContainer.classList.remove('active');
+    }
+
+    navSentiment.addEventListener('click', () => {
+      hideAll();
+      sentimentContainer.classList.add('active');
+    });
+
+    navPathfinding.addEventListener('click', () => {
+      hideAll();
+      pathfindingContainer.classList.add('active');
+    });
+
+    navTicTacToe.addEventListener('click', () => {
+      hideAll();
+      tictactoeContainer.classList.add('active');
+    });
+
+    // Sentiment Analysis Tool JS
+    const emojis = {
+      Positive: '😊',
+      Negative: '😞',
+      Neutral: '😐'
+    };
+
+    function analyzeSentiment() {
+      const userInput = document.getElementById('userInput').value.trim();
+      const resultDiv = document.getElementById('result');
+      const loading = document.getElementById('loading');
+
+      if (!userInput) {
+        alert("Please enter some text before analyzing.");
+        return;
+      }
+
+      resultDiv.style.display = 'none';
+      loading.style.display = 'block';
+
+      fetch('/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept-Language': navigator.language || 'en-US'
+        },
+        body: JSON.stringify({ text: userInput }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        loading.style.display = 'none';
+        resultDiv.style.display = 'block';
+
+        resultDiv.innerHTML = `
+          <h3>Analysis Result:</h3>
+          <p class="${data.sentiment.toLowerCase()}">
+            Sentiment: ${emojis[data.sentiment] || ''} <strong>${data.sentiment}</strong>
+          </p>
+          <p>Polarity: ${data.polarity.toFixed(2)}</p>
+          <p>Subjectivity: ${data.subjectivity.toFixed(2)}</p>
+          <p><strong>Comment:</strong> ${data.comment}</p>
+        `;
+        resultDiv.scrollIntoView({ behavior: 'smooth' });
+      })
+      .catch(error => {
+        loading.style.display = 'none';
+        alert('Error analyzing sentiment. Please try again later.');
+        console.error('Analysis error:', error);
+      });
+    }
+
+    function clearAll() {
+      document.getElementById('userInput').value = '';
+      document.getElementById('result').style.display = 'none';
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    function toggleMode() {
+      const body = document.body;
+      body.classList.toggle('dark-mode');
+      body.classList.toggle('light-mode');
+    }
+
+    // Ctrl + Enter shortcut for sentiment analysis
+    document.getElementById("userInput").addEventListener("keydown", function(e) {
+      if (e.ctrlKey && e.key === "Enter") {
+        analyzeSentiment();
+      }
+    });
+
+    // Pathfinding Tool JS
+    const gridSize = 10;
+    let grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(0));
+    let start = null, end = null, currentMode = 'obstacle';
+
+    const gridDiv = document.getElementById('grid');
+
+    function renderGrid() {
+      gridDiv.innerHTML = '';
+      for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+          const cell = document.createElement('div');
+          cell.style.width = '30px';
+          cell.style.height = '30px';
+          cell.style.border = '1px solid #888';
+          cell.style.cursor = 'pointer';
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+
+          const val = grid[row][col];
+          if (start && row === start[0] && col === start[1]) {
+            cell.style.background = '#00e0ff';
+          } else if (end && row === end[0] && col === end[1]) {
+            cell.style.background = '#ffd000';
+          } else if (val === 1) {
+            cell.style.background = '#f44336';
+          } else if (val === 2) {
+            cell.style.background = '#4caf50';
+          } else {
+            cell.style.background = 'rgba(255,255,255,0.05)';
+          }
+
+          cell.onclick = () => handleCellClick(row, col);
+          gridDiv.appendChild(cell);
+        }
+      }
+    }
+
+    function clearGrid() {
+      grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(0));
+      start = null;
+      end = null;
+      currentMode = 'obstacle';
+      renderGrid();
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+    }
+
+    function handleCellClick(row, col) {
+      if (currentMode === 'start') {
+        start = [row, col];
+      } else if (currentMode === 'end') {
+        end = [row, col];
+      } else if (currentMode === 'obstacle') {
+        if ((start && row === start[0] && col === start[1]) || (end && row === end[0] && col === end[1])) return;
+        grid[row][col] = 1;
+      } else if (currentMode === 'clear') {
+        if (start && row === start[0] && col === start[1]) start = null;
+        if (end && row === end[0] && col === end[1]) end = null;
+        grid[row][col] = 0;
+      }
+      renderGrid();
+    }
+
+    function findPath() {
+      if (!start || !end) {
+        alert("Please set both start and end points.");
+        return;
+      }
+
+      fetch('/astar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grid, start, end })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.path) {
+          for (const [r, c] of data.path) {
+            if ((start[0] === r && start[1] === c) || (end[0] === r && end[1] === c)) continue;
+            grid[r][c] = 2;
+          }
+          renderGrid();
+        } else {
+          alert("No path found!");
+        }
+      });
+    }
+
+    // Tic Tac Toe Game JS
+    const tttCells = document.querySelectorAll('.ttt-cell');
+    const tttStatus = document.getElementById('ttt-status');
+    const tttReset = document.getElementById('ttt-reset');
+
+    let tttBoard = Array(9).fill(null);
+    let tttGameActive = true;
+
+    const winningConditions = [
+      [0,1,2],
+      [3,4,5],
+      [6,7,8],
+      [0,3,6],
+      [1,4,7],
+      [2,5,8],
+      [0,4,8],
+      [2,4,6]
+    ];
+
+    function checkWin(player) {
+      return winningConditions.some(condition => {
+        const [a, b, c] = condition;
+        return tttBoard[a] === player && tttBoard[b] === player && tttBoard[c] === player;
+      });
+    }
+
+    function checkDraw() {
+      return tttBoard.every(cell => cell !== null);
+    }
+
+    function handleTttCellClick(e) {
+      const index = e.target.getAttribute('data-cell-index');
+      if (tttBoard[index] !== null || !tttGameActive) return;
+
+      // User move (X)
+      tttBoard[index] = 'X';
+      e.target.textContent = 'X';
+
+      if (checkWin('X')) {
+        tttStatus.textContent = `Player X wins! 🎉`;
+        tttGameActive = false;
+        return;
+      }
+
+      if (checkDraw()) {
+        tttStatus.textContent = "It's a draw! 🤝";
+        tttGameActive = false;
+        return;
+      }
+
+      tttStatus.textContent = `AI's turn (O)`;
+
+      // AI move
+      setTimeout(() => {
+        const aiMove = getBestMove();
+        if (aiMove !== -1) {
+          tttBoard[aiMove] = 'O';
+          tttCells[aiMove].textContent = 'O';
+
+          if (checkWin('O')) {
+            tttStatus.textContent = `Player O (AI) wins! 🤖🎉`;
+            tttGameActive = false;
+            return;
+          }
+
+          if (checkDraw()) {
+            tttStatus.textContent = "It's a draw! 🤝";
+            tttGameActive = false;
+            return;
+          }
+
+          tttStatus.textContent = `Player X's turn`;
+        }
+      }, 500);
+    }
+
+    function getBestMove() {
+      // Minimax algorithm to find best move for AI (O)
+      let bestScore = -Infinity;
+      let move = -1;
+      for (let i = 0; i < 9; i++) {
+        if (tttBoard[i] === null) {
+          tttBoard[i] = 'O';
+          let score = minimax(tttBoard, 0, false);
+          tttBoard[i] = null;
+          if (score > bestScore) {
+            bestScore = score;
+            move = i;
+          }
+        }
+      }
+      return move;
+    }
+
+    function minimax(board, depth, isMaximizing) {
+      if (checkWin('O')) return 10 - depth;
+      if (checkWin('X')) return depth - 10;
+      if (checkDraw()) return 0;
+
+      if (isMaximizing) {
+        let bestScore = -Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (board[i] === null) {
+            board[i] = 'O';
+            let score = minimax(board, depth + 1, false);
+            board[i] = null;
+            bestScore = Math.max(score, bestScore);
+          }
+        }
+        return bestScore;
+      } else {
+        let bestScore = Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (board[i] === null) {
+            board[i] = 'X';
+            let score = minimax(board, depth + 1, true);
+            board[i] = null;
+            bestScore = Math.min(score, bestScore);
+          }
+        }
+        return bestScore;
+      }
+    }
+
+    function resetTttGame() {
+      tttBoard.fill(null);
+      tttGameActive = true;
+      tttStatus.textContent = `Player X's turn`;
+      tttCells.forEach(cell => cell.textContent = '');
+    }
+
+    tttCells.forEach(cell => cell.addEventListener('click', handleTttCellClick));
+    tttReset.addEventListener('click', resetTttGame);
+</script>
+</body>
+</html>

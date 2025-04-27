@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pathfinding Visualizer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      transition: background 0.5s ease, color 0.5s ease;
+      background: linear-gradient(135deg, #1e1e2f, #2e2e4d);
+      color: #f1f1f1;
+      padding-top: 60px;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 100vw;
+      background-image: url('./static/sentiment.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      filter: blur(10px) brightness(0.6);
+      opacity: 0.7;
+      z-index: -1;
+      transition: filter 0.5s ease, opacity 0.5s ease;
+    }
+
+    body.light-mode {
+      background: linear-gradient(135deg, #ffffff, #e2e2e2);
+      color: #333;
+    }
+
+    body.light-mode::before {
+      filter: blur(10px) brightness(1.1);
+      opacity: 0.5;
+    }
+
+    .container {
+      backdrop-filter: blur(20px);
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 24px;
+      padding: 32px;
+      width: 90%;
+      max-width: 550px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+      animation: fadeIn 0.6s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 28px;
+      color: #ffd000;
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(10, 35px);
+      grid-template-rows: repeat(10, 35px);
+      gap: 4px;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    #grid div {
+      width: 35px;
+      height: 35px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background-color: rgba(255, 255, 255, 0.05);
+      transition: 0.2s ease;
+      border-radius: 4px;
+    }
+
+    #grid div:hover {
+      cursor: pointer;
+      transform: scale(1.05);
+      box-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
+    }
+
+    .pathfinding-buttons {
+      display: flex;
+      justify-content: space-evenly;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .pathfinding-buttons button {
+      background: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s ease;
+      color: #333;
+    }
+
+    .pathfinding-buttons button:hover {
+      background: #f0f0f0;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+    }
+
+    .navbar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 999;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .navbar .nav-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #ffd000;
+    }
+
+    .navbar .nav-links a {
+      margin-left: 20px;
+      text-decoration: none;
+      color: #f1f1f1;
+      font-weight: 500;
+      transition: color 0.3s ease;
+    }
+
+    .navbar .nav-links a:hover {
+      color: #00e0ff;
+    }
+
+    body.light-mode .navbar {
+      background: rgba(255, 255, 255, 0.7);
+      border-bottom: 1px solid #ccc;
+    }
+
+    body.light-mode .navbar .nav-title {
+      color: #333;
+    }
+
+    body.light-mode .navbar .nav-links a {
+      color: #333;
+    }
+  </style>
+</head>
+<body class="dark-mode">
+
+  <nav class="navbar">
+    <div class="nav-title">🚀 Multi-Tool Dashboard</div>
+    <div class="nav-links">
+      <a href="/sentiment">💬 Sentiment</a>
+      <a href="/pathfinding">🧭 Pathfinding</a>
+    </div>
+  </nav>
+
+  <div class="container" id="pathfinding" style="margin-top: 50px;">
+    <h1>🧭 A* Pathfinding Visualizer</h1>
+    <div id="grid"></div>
+
+    <div class="pathfinding-buttons">
+      <button onclick="setMode('start')">Start</button>
+      <button onclick="setMode('end')">End</button>
+      <button onclick="setMode('obstacle')">Obstacle</button>
+      <button onclick="setMode('wumpus')">Wumpus</button>
+      <button onclick="setMode('pit')">Pit</button>
+      <button onclick="clearGrid()">Clear</button>
+      <button onclick="findPath()">🚀 Find Path</button>
+    </div>
+  </div>
+
+  <script>
+    const gridSize = 10;
+    // 0 = empty, 1 = obstacle, 2 = path, 3 = wumpus, 4 = pit
+    let grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(0));
+    let start = null, end = null, currentMode = 'obstacle';
+
+    const gridDiv = document.getElementById('grid');
+
+    function renderGrid() {
+      gridDiv.innerHTML = '';
+      for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+          const cell = document.createElement('div');
+          cell.style.width = '30px';
+          cell.style.height = '30px';
+          cell.style.border = '1px solid #888';
+          cell.style.cursor = 'pointer';
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+
+          const val = grid[row][col];
+          if (start && row === start[0] && col === start[1]) {
+            cell.style.background = '#00e0ff';
+          } else if (end && row === end[0] && col === end[1]) {
+            cell.style.background = '#ffd000';
+          } else if (val === 1) {
+            cell.style.background = '#f44336'; // obstacle red
+          } else if (val === 2) {
+            cell.style.background = '#4caf50'; // path green
+          } else if (val === 3) {
+            cell.style.background = '#800080'; // wumpus purple
+          } else if (val === 4) {
+            cell.style.background = '#000000'; // pit black
+          } else {
+            cell.style.background = 'rgba(255,255,255,0.05)';
+          }
+
+          cell.onclick = () => handleCellClick(row, col);
+          gridDiv.appendChild(cell);
+        }
+      }
+    }
+
+    function clearGrid() {
+      grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(0));
+      start = null;
+      end = null;
+      currentMode = 'obstacle';
+      renderGrid();
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+    }
+
+    function handleCellClick(row, col) {
+      if (currentMode === 'start') {
+        start = [row, col];
+      } else if (currentMode === 'end') {
+        end = [row, col];
+      } else if (currentMode === 'obstacle') {
+        if ((start && row === start[0] && col === start[1]) || (end && row === end[0] && col === end[1])) return;
+        grid[row][col] = 1;
+      } else if (currentMode === 'wumpus') {
+        if ((start && row === start[0] && col === start[1]) || (end && row === end[0] && col === end[1])) return;
+        grid[row][col] = 3;
+      } else if (currentMode === 'pit') {
+        if ((start && row === start[0] && col === start[1]) || (end && row === end[0] && col === end[1])) return;
+        grid[row][col] = 4;
+      } else if (currentMode === 'clear') {
+        if (start && row === start[0] && col === start[1]) start = null;
+        if (end && row === end[0] && col === end[1]) end = null;
+        grid[row][col] = 0;
+      }
+      renderGrid();
+    }
+
+    function findPath() {
+      if (!start || !end) {
+        alert("Please set both start and end points.");
+        return;
+      }
+
+      fetch('/astar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grid, start, end })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.path) {
+          for (const [r, c] of data.path) {
+            if ((start[0] === r && start[1] === c) || (end[0] === r && end[1] === c)) continue;
+            grid[r][c] = 2;
+          }
+          renderGrid();
+        } else {
+          alert("No path found!");
+        }
+      });
+    }
+
+    renderGrid();
+  </script>
+</body>
+</html>

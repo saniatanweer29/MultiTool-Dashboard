@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sentiment Analysis Tool</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      transition: background 0.5s ease, color 0.5s ease;
+      background: linear-gradient(135deg, #1e1e2f, #2e2e4d);
+      color: #f1f1f1;
+      padding-top: 60px;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 100vw;
+      background-image: url('./static/sentiment.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      filter: blur(10px) brightness(0.6);
+      opacity: 0.7;
+      z-index: -1;
+      transition: filter 0.5s ease, opacity 0.5s ease;
+    }
+
+    body.light-mode {
+      background: linear-gradient(135deg, #ffffff, #e2e2e2);
+      color: #333;
+    }
+
+    body.light-mode::before {
+      filter: blur(10px) brightness(1.1);
+      opacity: 0.5;
+    }
+
+    .container {
+      backdrop-filter: blur(20px);
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 24px;
+      padding: 32px;
+      width: 90%;
+      max-width: 550px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+      animation: fadeIn 0.6s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 28px;
+      color: #ffd000;
+    }
+
+    textarea {
+      width: 100%;
+      height: 130px;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: none;
+      margin-bottom: 20px;
+      resize: none;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: inherit;
+    }
+
+    textarea:focus {
+      outline: none;
+      border: 2px solid #00e0ff;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      transition: all 0.3s ease;
+    }
+
+    #analyzeBtn {
+      background-color: #ffd000;
+      color: #000;
+      font-weight: bold;
+    }
+
+    #analyzeBtn:hover {
+      background-color: #ffb000;
+      transform: scale(1.03);
+    }
+
+    #clearBtn {
+      background-color: transparent;
+      border: 1px solid #aaa;
+      color: inherit;
+    }
+
+    #clearBtn:hover {
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    #toggleMode {
+      background-color: #444;
+      color: #fff;
+    }
+
+    #toggleMode:hover {
+      background-color: #222;
+    }
+
+    #result {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid #888;
+      transition: all 0.3s ease;
+    }
+
+    .positive {
+      color: #4caf50;
+    }
+
+    .negative {
+      color: #f44336;
+    }
+
+    .neutral {
+      color: #9e9e9e;
+    }
+
+    #loading {
+      text-align: center;
+      margin-top: 10px;
+      display: none;
+      font-style: italic;
+      color: #00e0ff;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 22px;
+      }
+
+      textarea {
+        height: 100px;
+      }
+    }
+
+    .navbar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(10px);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 999;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .navbar .nav-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #ffd000;
+    }
+
+    .navbar .nav-links a {
+      margin-left: 20px;
+      text-decoration: none;
+      color: #f1f1f1;
+      font-weight: 500;
+      transition: color 0.3s ease;
+    }
+
+    .navbar .nav-links a:hover {
+      color: #00e0ff;
+    }
+
+    body.light-mode .navbar {
+      background: rgba(255, 255, 255, 0.7);
+      border-bottom: 1px solid #ccc;
+    }
+
+    body.light-mode .navbar .nav-title {
+      color: #333;
+    }
+
+    body.light-mode .navbar .nav-links a {
+      color: #333;
+    }
+  </style>
+</head>
+<body class="dark-mode">
+
+  <nav class="navbar">
+    <div class="nav-title">🚀 Multi-Tool Dashboard</div>
+    <div class="nav-links">
+      <a href="/sentiment">💬 Sentiment</a>
+      <a href="/pathfinding">🧭 Pathfinding</a>
+    </div>
+  </nav>
+
+  <div class="container" id="sentiment" style="margin-top: 50px;">
+    <h1>💬 Sentiment Analysis Tool</h1>
+    <textarea id="userInput" placeholder="Type your thoughts..."></textarea>
+    <button id="analyzeBtn" onclick="analyzeSentiment()">🔍 Analyze</button>
+    <button id="clearBtn" onclick="clearAll()">🧹 Clear</button>
+    <button id="toggleMode" onclick="toggleMode()">🌓 Toggle Dark/Light</button>
+
+    <div id="loading">⏳ Analyzing sentiment...</div>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const emojis = {
+      Positive: '😊',
+      Negative: '😞',
+      Neutral: '😐'
+    };
+
+    function analyzeSentiment() {
+      const userInput = document.getElementById('userInput').value.trim();
+      const resultDiv = document.getElementById('result');
+      const loading = document.getElementById('loading');
+
+      if (!userInput) {
+        alert("Please enter some text before analyzing.");
+        return;
+      }
+
+      resultDiv.style.display = 'none';
+      loading.style.display = 'block';
+
+      fetch('/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept-Language': navigator.language || 'en-US'
+        },
+        body: JSON.stringify({ text: userInput }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        loading.style.display = 'none';
+        resultDiv.style.display = 'block';
+
+        resultDiv.innerHTML = `
+          <h3>Analysis Result:</h3>
+          <p class="${data.sentiment.toLowerCase()}">
+            Sentiment: ${emojis[data.sentiment] || ''} <strong>${data.sentiment}</strong>
+          </p>
+          <p>Polarity: ${data.polarity.toFixed(2)}</p>
+          <p>Subjectivity: ${data.subjectivity.toFixed(2)}</p>
+          <p><strong>Comment:</strong> ${data.comment}</p>
+        `;
+        resultDiv.scrollIntoView({ behavior: 'smooth' });
+      })
+      .catch(error => {
+        loading.style.display = 'none';
+        alert('Error analyzing sentiment. Please try again later.');
+        console.error('Analysis error:', error);
+      });
+    }
+
+    function clearAll() {
+      document.getElementById('userInput').value = '';
+      document.getElementById('result').style.display = 'none';
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    function toggleMode() {
+      const body = document.body;
+      body.classList.toggle('dark-mode');
+      body.classList.toggle('light-mode');
+    }
+
+    // Ctrl + Enter shortcut
+    document.getElementById("userInput").addEventListener("keydown", function(e) {
+      if (e.ctrlKey && e.key === "Enter") {
+        analyzeSentiment();
+      }
+    });
+  </script>
+</body>
+</html>
